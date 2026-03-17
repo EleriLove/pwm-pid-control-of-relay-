@@ -1,0 +1,75 @@
+const int relay = D6; 
+const int sensorPin = A0;
+const int samples = 20;
+const double A = -1.960907171e-3;
+const double B = 7.119309159e-4;
+const double C = -15.91060232e-7;
+const double Vin = 3.3;
+const int pullup = 4700;
+double Vout = 0;
+double R = 0;
+int sensorValue = 0;
+double temp = 0;
+double tween = 0;
+double duty = 0;
+int target = 38;
+double TchangeMax = .5;
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println();
+  pinMode(relay, OUTPUT);
+}
+
+// hehe duty
+void LongDuty() {
+  //custom duty cycle pwm time about 1 second, yey... relays...  
+  Serial.println(temp);
+
+ for (int i = 0; i < 255; i++) {
+    if (i <= duty) {
+    digitalWrite(relay, HIGH);
+    delay(8);
+    }
+      else {
+        digitalWrite(relay, LOW);
+        delay(8);
+      }
+
+  }
+
+}
+
+void loop() {
+  
+  // averaging samples to reduce random noise
+  int total = 0;
+  
+  for(int i =0; i < samples; i++) {
+    total += analogRead(sensorPin);
+    delay(10);
+  } 
+  sensorValue = total / samples;
+
+
+  // don't try understanding this math, just know it takes voltage and turns it into celcius give or take, this takes way too much math.... 
+  Vout = (sensorValue * Vin) / 4095.0;
+  R = pullup * (Vout / (Vin - Vout));
+  temp = 1 / ((1/298.15)+(log(R / 5000)/3950));
+  temp = temp - 273.15;
+
+  Serial.println(temp);
+
+  // attemping to calculate amount of change I can effect over time to the water for pwm purposes.
+  duty = (target - temp) / TchangeMax;
+
+  
+//don't thermal runaway, don't thermal runaway, don't thermal runaway..... oh god it's going to thermal runaway... 
+  if ( duty > 0) {
+  duty = duty * 255;
+  LongDuty();
+  }
+    else {
+      digitalWrite(relay, LOW);
+    }
+}
