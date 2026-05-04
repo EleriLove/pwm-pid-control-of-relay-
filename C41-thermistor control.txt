@@ -1,44 +1,46 @@
+#include <PID_v1.h>
+
 const int relay = D6; 
-const int sensorPin = A0;
-const int samples = 20;
-const double A = -1.960907171e-3;
-const double B = 7.119309159e-4;
-const double C = -15.91060232e-7;
-const double Vin = 3.3;
-const int pullup = 4700;
-double Vout = 0;
-double R = 0;
-int sensorValue = 0;
-double temp = 0;
-double tween = 0;
-double duty = 0;
-int target = 38;
-double TchangeMax = .5;
+const double sensorPin = A1;
+const double samples = 30;
+const double A = 0.5529545762e-3;
+const double B = 2.151848957e-4;
+const double C = 2.120919370e-7;
+const float Vin = 3.3;
+const float pullup = 100000.0;
+float Vout;
+float R;
+float sensorValue;
+float prevRead;
+float sensorFinal;
+float smoothing = .35;
+double temp;
+double setpoint = 50;
+double logR;
+double output;
+double Kp=15, Ki=30, Kd=7;
+
+
+PID pidTemp(&temp, &output, &setpoint, Kp, Ki, Kd, DIRECT);
+
+int timeScale = 2000;
+unsigned long timeStart;
 
 void setup() {
   Serial.begin(115200);
+
   Serial.println();
+
   pinMode(relay, OUTPUT);
-}
 
-// hehe duty
-void LongDuty() {
-  //custom duty cycle pwm time about 1 second, yey... relays...  
-  Serial.println(temp);
+  timeStart = millis();
 
- for (int i = 0; i < 255; i++) {
-    if (i <= duty) {
-    digitalWrite(relay, HIGH);
-    delay(8);
-    }
-      else {
-        digitalWrite(relay, LOW);
-        delay(8);
-      }
+  pidTemp.SetOutputLimits(0, timeScale);
 
-  }
+  pidTemp.SetMode(AUTOMATIC);
 
 }
+
 
 void loop() {
   
@@ -46,30 +48,43 @@ void loop() {
   int total = 0;
   
   for(int i =0; i < samples; i++) {
-    total += analogRead(sensorPin);
-    delay(10);
+
+    int n = analogReadMilliVolts(sensorPin);
+
+    if (n > 12 && n < 1865) {
+      total += n;
+    }
+      else {
+        Serial.println("sensor fault");
+        i--;
+    }
+    delay(20);
   } 
+  prevRead = sensorValue;
   sensorValue = total / samples;
+  sensorFinal = smoothing * sensorValue + (1-smoothing) * prevRead;
 
 
   // don't try understanding this math, just know it takes voltage and turns it into celcius give or take, this takes way too much math.... 
-  Vout = (sensorValue * Vin) / 4095.0;
-  R = pullup * (Vout / (Vin - Vout));
-  temp = 1 / ((1/298.15)+(log(R / 5000)/3950));
+  Vout = sensorFinal / 1000.0;
+  R = pullup * 1 / ((Vin/Vout)-1);
+  logR= log(R);
+  temp = 1.0 / (A + B * logR + (C * logR * logR * logR));
   temp = temp - 273.15;
 
   Serial.println(temp);
 
-  // attemping to calculate amount of change I can effect over time to the water for pwm purposes.
-  duty = (target - temp) / TchangeMax;
 
   
-//don't thermal runaway, don't thermal runaway, don't thermal runaway..... oh god it's going to thermal runaway... 
-  if ( duty > 0) {
-  duty = duty * 255;
-  LongDuty();
+//don't thermal runaway, don't thermal runaway, don't thermal runaway..... oh gods it's going to thermal runaway... 
+  pidTemp.Compute();
+
+  if(timeScale < millis() - timeStart){
+    timeStart += timeScale;
   }
-    else {
-      digitalWrite(relay, LOW);
-    }
+  if (output < millis() - timeStart) {
+    digitalWrite(relay, 0);
+  }
+    else digitalWrite(relay, 1);
+
 }
