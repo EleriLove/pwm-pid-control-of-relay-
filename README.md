@@ -15,3 +15,7 @@ added code, code represents a middle stage between having had a working settup t
 esp32 config resistor was moved to a 4.7k Ohm resistor and a 5k thermistor instead of a 10k calibration resistor and a 10k thermistor. 
 
 going to go to steinheardt-hart as the beta thermistor algorythm seems to read low. this will verify without question what the beta value of the aliexpress thermistor is and make it perfectly calibrated without question. 
+
+edit 2:
+
+branched this code to work for a lab oven I'm working on, check out the new branch. these will be insimultaneous development. 
