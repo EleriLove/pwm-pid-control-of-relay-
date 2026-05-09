@@ -18,7 +18,7 @@ double temp;
 double setpoint = 150;
 double logR;
 double output;
-double Kp=63, Ki=35, Kd=8;
+double Kp=40, Ki=0, Kd=0;
 
 
 PID pidTemp(&temp, &output, &setpoint, Kp, Ki, Kd, DIRECT);
@@ -41,17 +41,14 @@ void setup() {
 
 }
 
-void panic();
-void panic1();
-
-void panic1(){
-  panic();
-}
-
 void panic () {
-  setpoint = 0;
-  digitalWrite(relay, 0);
-  panic1();
+  while (true) {
+    if (digitalRead(relay) == 1|| setpoint > 0 ) {
+      digitalWrite(relay, 0);
+      setpoint = 0;
+    }
+  }
+ 
 }
 
 void loop() {
@@ -73,11 +70,9 @@ void loop() {
         Serial.println("sensor fault");
         i--;
     }
-    delay(20);
+    delay(10);
   } 
   if (error >= 3) {
-    setpoint = 0;
-    digitalWrite(relay, 0);
     panic();
   }
   prevRead = sensorValue;
