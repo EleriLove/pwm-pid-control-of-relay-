@@ -19,3 +19,18 @@ going to go to steinheardt-hart as the beta thermistor algorythm seems to read l
 edit 2:
 
 branched this code to work for a lab oven I'm working on, check out the new branch. these will be insimultaneous development. 
+
+
+
+edit... 50..000000000?
+
+we have commands implemented! 
+we can finally change the temperature without reprogramming the whole esp32! 
+command format temp=setpoint
+
+whatever you want the set point to be you need to have it directly following the word temp= NO SPACES!
+other commands we might implement are the ability to change the PID values! that would be... interesting! 
+the command for that would be something like "tune= 80 4.6 8" which would parse out to be P 80 I 4.6 and D 8, but that's for next time! current command lengths are only able to be 4 characters long 
+
+
+
