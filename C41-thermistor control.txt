@@ -1,6 +1,8 @@
 #include <PID_v1.h>
 
-const int relay = D6; 
+const int relay = D6;
+int error = 0;
+int userinput;
 const double sensorPin = A1;
 const double samples = 45;
 const double A = 0.5529545762e-3;
@@ -15,11 +17,13 @@ float prevRead;
 float sensorFinal;
 float smoothing = .2;
 double temp;
-double setpoint = 230;
+double setpoint = 0;
 double logR;
 double output;
-double Kp=65, Ki=2.8, Kd=3;
-int error = 0;
+double Kp=65, Ki=2.8, Kd=2.1;
+char serialread[9];
+char command[10];
+String ketchup;
 
 
 PID pidTemp(&temp, &output, &setpoint, Kp, Ki, Kd, DIRECT);
@@ -60,6 +64,15 @@ void loop() {
   
   // averaging samples to reduce random noise
   int total = 0;
+  ketchup = Serial.readString();
+  ketchup.toCharArray(serialread, 9);
+  int parsed = sscanf(serialread, "%5s%3d", command, &userinput);
+  if (parsed == 2) {
+    if (strcmp(command, "temp=") == 0 && userinput <= 250) {
+      setpoint = userinput;
+    }
+
+  }
 
   prevRead = sensorValue;
 
@@ -85,16 +98,13 @@ void loop() {
   sensorFinal = smoothing * sensorValue + (1-smoothing) * prevRead;
 
 
-  // don't try understanding this math, just know it takes voltage and turns it into celcius give or take, this takes way too much math.... 
+  // don't try understanding this math, just know it takes voltage and turns it into celcius, this takes way too much math.... 
   Vout = sensorFinal / 1000.0;
   R = pullup * 1 / ((Vin/Vout)-1);
   logR= log(R);
   temp = 1.0 / (A + B * logR + (C * logR * logR * logR));
   temp = temp - 273.15;
-
   Serial.println(temp);
-
-
   
 //don't thermal runaway, don't thermal runaway, don't thermal runaway..... oh gods it's going to thermal runaway... 
   pidTemp.Compute();
