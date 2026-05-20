@@ -2,7 +2,7 @@
 
 const int relay = D6; 
 const double sensorPin = A1;
-const double samples = 30;
+const double samples = 45;
 const double A = 0.5529545762e-3;
 const double B = 2.151848957e-4;
 const double C = 2.120919370e-7;
@@ -13,12 +13,13 @@ float R;
 float sensorValue;
 float prevRead;
 float sensorFinal;
-float smoothing = .6;
+float smoothing = .2;
 double temp;
-double setpoint = 150;
+double setpoint = 230;
 double logR;
 double output;
-double Kp=40, Ki=0, Kd=0;
+double Kp=65, Ki=2.8, Kd=3;
+int error = 0;
 
 
 PID pidTemp(&temp, &output, &setpoint, Kp, Ki, Kd, DIRECT);
@@ -46,7 +47,11 @@ void panic () {
     if (digitalRead(relay) == 1|| setpoint > 0 ) {
       digitalWrite(relay, 0);
       setpoint = 0;
+      Serial.println("PANIC");
+    Serial.println(temp);
     }
+    delay(500);
+    Serial.println(temp);
   }
  
 }
@@ -55,13 +60,17 @@ void loop() {
   
   // averaging samples to reduce random noise
   int total = 0;
-  int error = 0;
-  
+
+  prevRead = sensorValue;
+
   for(int i =0; i < samples; i++) {
 
     int n = analogReadMilliVolts(sensorPin);
 
-    if (n > 12 && n < 1865) {
+    if (error >= 3) {
+    panic();
+  }
+    if (n > 8 && n < 1865) {
       error = 0;
       total += n;
     }
@@ -72,10 +81,6 @@ void loop() {
     }
     delay(10);
   } 
-  if (error >= 3) {
-    panic();
-  }
-  prevRead = sensorValue;
   sensorValue = total / samples;
   sensorFinal = smoothing * sensorValue + (1-smoothing) * prevRead;
 
