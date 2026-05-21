@@ -20,10 +20,11 @@ double temp;
 double setpoint = 0;
 double logR;
 double output;
-double Kp=65, Ki=2.8, Kd=2.1;
-char serialread[9];
+double Kp=61.2, Ki=1.3, Kd=3;
+char serialread[24];
 char command[10];
-String ketchup;
+float P, I, D;
+String input;
 
 
 PID pidTemp(&temp, &output, &setpoint, Kp, Ki, Kd, DIRECT);
@@ -64,15 +65,38 @@ void loop() {
   
   // averaging samples to reduce random noise
   int total = 0;
-  ketchup = Serial.readString();
-  ketchup.toCharArray(serialread, 9);
-  int parsed = sscanf(serialread, "%5s%3d", command, &userinput);
-  if (parsed == 2) {
-    if (strcmp(command, "temp=") == 0 && userinput <= 250) {
-      setpoint = userinput;
-    }
+  input = Serial.readString();
+  input.toCharArray(serialread, 24);
 
+  if ( input[1] == 'e') {
+    sscanf(serialread, "%5s %d", command, &userinput);
+    if (strcmp(command, "temp=") == 0 && userinput <=250) {
+      setpoint = userinput;
+      Serial.println();
+      Serial.print("temperature changed: ");
+      Serial.print(setpoint);
+      Serial.println();
+    }
   }
+
+  if ( input[1] == 'u') {
+    sscanf(serialread, "%5s %f %f %f", command, &P, &I, &D);
+    if (strcmp(command, "tune=") == 0) {
+      
+      Kp = P;
+      Ki = I;
+      Kd = D;
+      Serial.println();
+      Serial.print("PID changed: ");
+      Serial.print(Kp);
+      Serial.print(" ");
+      Serial.print(Ki);
+      Serial.print(" ");
+      Serial.println(Kd);
+      pidTemp.SetTunings(Kp, Ki, Kd);
+    }
+  }
+  
 
   prevRead = sensorValue;
 
