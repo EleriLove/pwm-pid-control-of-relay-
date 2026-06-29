@@ -34,3 +34,4 @@ the command for that would be something like "tune= 80 4.6 8" which would parse 
 
 
 
+check out the video! https://youtu.be/Qr83flDN-Bk?si=HnX6hJfbiNDaylgE
